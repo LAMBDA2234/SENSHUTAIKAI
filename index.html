@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Checkpoint Scanner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+  <h1 class="text-3xl font-bold mb-4">✅ Championship Checkpoint Scanner</h1>
+
+  <!-- QR Scanner Box -->
+  <div id="reader" class="w-80 h-80 border-4 border-indigo-500 rounded-xl shadow-lg"></div>
+
+  <!-- Result Box -->
+  <div id="resultBox" class="hidden mt-6 w-full max-w-md p-6 rounded-2xl shadow-xl text-center">
+    <img id="resPhoto" class="w-24 h-24 rounded-full mx-auto border-4 mb-3 hidden"/>
+    <div id="resName" class="text-2xl font-bold"></div>
+    <div id="resRole" class="text-lg font-semibold"></div>
+    <div id="resDojo" class="text-sm text-gray-700"></div>
+    <div id="resId" class="text-xs mt-2 text-gray-500"></div>
+  </div>
+
+  <!-- Sounds -->
+  <audio id="beepOk">
+    <source src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" type="audio/ogg">
+  </audio>
+  <audio id="beepFail">
+    <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" type="audio/ogg">
+  </audio>
+
+<script>
+  // Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyDaHqgItxdKb-wQhjRX4mD-4yFyc2sfroE",
+    authDomain: "championship-app-4cbd4.firebaseapp.com",
+    databaseURL: "https://championship-app-4cbd4-default-rtdb.firebaseio.com",
+    projectId: "championship-app-4cbd4",
+    storageBucket: "championship-app-4cbd4.appspot.com",
+    messagingSenderId: "509794140861",
+    appId: "1:509794140861:web:1a3f944428143af9c2add4"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const resBox = document.getElementById("resultBox");
+  const resPhoto = document.getElementById("resPhoto");
+  const resName = document.getElementById("resName");
+  const resRole = document.getElementById("resRole");
+  const resDojo = document.getElementById("resDojo");
+  const resId = document.getElementById("resId");
+  const beepOk = document.getElementById("beepOk");
+  const beepFail = document.getElementById("beepFail");
+
+  function showResult(user, success) {
+    resBox.classList.remove("hidden");
+    if (success) {
+      resBox.className = "mt-6 w-full max-w-md p-6 rounded-2xl shadow-xl text-center bg-green-500 text-white";
+      resName.textContent = user.name;
+      resRole.textContent = user.role;
+      resDojo.textContent = user.dojo || "No Dojo";
+      resId.textContent = "ID: " + user.id;
+      if (user.photo) {
+        resPhoto.src = user.photo;
+        resPhoto.classList.remove("hidden");
+      } else {
+        resPhoto.classList.add("hidden");
+      }
+      beepOk.play();
+    } else {
+      resBox.className = "mt-6 w-full max-w-md p-6 rounded-2xl shadow-xl text-center bg-red-600 text-white";
+      resName.textContent = "❌ Invalid ID";
+      resRole.textContent = "";
+      resDojo.textContent = "";
+      resId.textContent = "Not found in system";
+      resPhoto.classList.add("hidden");
+      beepFail.play();
+    }
+  }
+
+  function onScanSuccess(decodedText) {
+    console.log("QR detected:", decodedText);
+    db.ref("users/" + decodedText).get().then(snapshot => {
+      if (snapshot.exists()) {
+        showResult(snapshot.val(), true);
+      } else {
+        showResult(null, false);
+      }
+    });
+  }
+
+  const html5QrCode = new Html5Qrcode("reader");
+  Html5Qrcode.getCameras().then(cameras => {
+    if (cameras && cameras.length) {
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        onScanSuccess
+      );
+    }
+  });
+</script>
+</body>
+</html>
