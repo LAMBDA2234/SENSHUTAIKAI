@@ -8,53 +8,56 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
+    body { margin: 0; }
     #camera {
-      width: 320px;
-      margin: auto;
+      width: 260px;
+      height: 260px;
+      margin: 0 auto;
     }
     .result-card {
-      margin-top: 1rem;
-      padding: 1rem;
+      margin-top: 10px;
+      padding: 12px;
       border-radius: 12px;
       text-align: center;
-      max-width: 320px;
+      max-width: 260px;
       background: #f3f4f6;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     .result-card img {
-      width: 80px; height: 80px;
+      width: 70px; height: 70px;
       border-radius: 50%;
       object-fit: cover;
-      margin-bottom: 0.5rem;
+      margin-bottom: 6px;
       border: 3px solid #2563eb;
     }
     .name {
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: bold;
-      word-break: break-word;
+      word-wrap: break-word;
       white-space: normal;
     }
     .role {
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       font-weight: bold;
-      padding: 2px 8px;
+      padding: 2px 6px;
       border-radius: 6px;
       display: inline-block;
       margin: 4px 0;
     }
+    .dojo, .id {
+      font-size: 0.8rem;
+    }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center p-6">
+<body class="bg-gray-100 flex flex-col items-center p-3">
 
-  <h1 class="text-xl font-bold mb-4">✅ Championship Checkpoint Scanner</h1>
+  <h1 class="text-base font-bold mb-3">✅ Championship Checkpoint Scanner</h1>
 
-  <div class="flex flex-col items-center space-y-4">
-    <!-- Camera -->
-    <div id="camera"></div>
+  <!-- Scanner -->
+  <div id="camera"></div>
 
-    <!-- Result Card -->
-    <div id="result" class="result-card hidden"></div>
-  </div>
+  <!-- Result -->
+  <div id="result" class="result-card hidden"></div>
 
 <script>
   // Firebase config
@@ -75,7 +78,6 @@
   function showResult(data) {
     if (!data) return;
 
-    // role badge color map
     let roleColor = {
       "PLAYER": "bg-blue-600 text-white",
       "JUDGE": "bg-red-600 text-white",
@@ -94,12 +96,6 @@
       <div class="id">ID: ${data.id || ''}</div>
     `;
     resultBox.classList.remove("hidden");
-
-    // optional: auto-hide after 5 sec
-    // setTimeout(() => { resultBox.classList.add("hidden"); }, 5000);
-
-    // optional: play beep
-    // new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg").play();
   }
 
   function onScanSuccess(decodedText) {
@@ -116,7 +112,7 @@
   const html5QrCode = new Html5Qrcode("camera");
   html5QrCode.start(
     { facingMode: "environment" },
-    { fps: 10, qrbox: { width: 200, height: 200 } },
+    { fps: 10, qrbox: { width: 220, height: 220 } },
     onScanSuccess
   );
 </script>
