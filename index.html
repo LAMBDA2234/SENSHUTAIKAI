@@ -8,58 +8,55 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
-    body { margin:0; background:#f3f4f6; }
+    body { margin: 0; }
     #camera {
-      width: 100%;
-      max-width: 360px;
+      width: 260px;
+      height: 260px;
       margin: 0 auto;
     }
     .result-card {
-      margin-top: 16px;
-      padding: 16px;
+      margin-top: 10px;
+      padding: 12px;
       border-radius: 12px;
       text-align: center;
-      background: white;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      max-width: 260px;
+      background: #f3f4f6;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     .result-card img {
-      width: 90px; height: 90px;
+      width: 70px; height: 70px;
       border-radius: 50%;
       object-fit: cover;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
       border: 3px solid #2563eb;
     }
     .name {
-      font-size: 1.4rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      margin-bottom: 4px;
+      font-size: 0.95rem;
+      font-weight: bold;
       word-wrap: break-word;
       white-space: normal;
     }
     .role {
-      font-size: 1rem;
+      font-size: 0.8rem;
       font-weight: bold;
-      padding: 4px 10px;
+      padding: 2px 6px;
       border-radius: 6px;
       display: inline-block;
-      margin: 6px 0;
+      margin: 4px 0;
     }
     .dojo, .id {
-      font-size: 1rem;
-      font-weight: 600;
-      margin-top: 4px;
+      font-size: 0.8rem;
     }
   </style>
 </head>
-<body>
+<body class="bg-gray-100 flex flex-col items-center p-3">
 
-  <h1 class="text-lg font-bold text-center p-2">✅ Championship Checkpoint Scanner</h1>
+  <h1 class="text-base font-bold mb-3">✅ Championship Checkpoint Scanner</h1>
 
-  <!-- Scanner on top -->
+  <!-- Scanner -->
   <div id="camera"></div>
 
-  <!-- Result immediately below -->
+  <!-- Result -->
   <div id="result" class="result-card hidden"></div>
 
 <script>
@@ -95,7 +92,7 @@
       <div class="role ${roleColor[data.role?.toUpperCase()] || 'bg-gray-400 text-white'}">
         ${data.role || ''}
       </div>
-      <div class="dojo">Dojo: ${data.dojo || ''}</div>
+      <div class="dojo">${data.dojo || ''}</div>
       <div class="id">ID: ${data.id || ''}</div>
     `;
     resultBox.classList.remove("hidden");
@@ -106,7 +103,7 @@
       if (snap.exists()) {
         showResult(snap.val());
       } else {
-        resultBox.innerHTML = `<div class="text-red-600 font-bold text-lg">❌ Invalid QR Code</div>`;
+        resultBox.innerHTML = `<div class="text-red-600 font-bold">❌ Invalid QR Code</div>`;
         resultBox.classList.remove("hidden");
       }
     });
@@ -115,7 +112,7 @@
   const html5QrCode = new Html5Qrcode("camera");
   html5QrCode.start(
     { facingMode: "environment" },
-    { fps: 10, qrbox: { width: 250, height: 250 } },
+    { fps: 10, qrbox: { width: 220, height: 220 } },
     onScanSuccess
   );
 </script>
