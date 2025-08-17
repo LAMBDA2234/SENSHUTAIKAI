@@ -6,7 +6,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body { margin:0; background:#f3f4f6; }
     #camera {
@@ -45,7 +45,7 @@
       display: inline-block;
       margin: 6px 0;
     }
-    .dojo, .id, .time {
+    .dojo, .id {
       font-size: 1rem;
       font-weight: 600;
       margin-top: 4px;
@@ -78,7 +78,7 @@
 
   const resultBox = document.getElementById("result");
 
-  function showResult(data, msg) {
+  function showResult(data) {
     if (!data) return;
 
     let roleColor = {
@@ -90,44 +90,26 @@
     };
 
     resultBox.innerHTML = `
-      ${data.photo ? `<img src="${data.photo}" alt="Photo"/>` : ""}
+      <img src="${data.photo || ''}" alt="Photo"/>
       <div class="name">${data.name || 'Unknown'}</div>
       <div class="role ${roleColor[data.role?.toUpperCase()] || 'bg-gray-400 text-white'}">
         ${data.role || ''}
       </div>
       <div class="dojo">Dojo: ${data.dojo || ''}</div>
       <div class="id">ID: ${data.id || ''}</div>
-      ${msg ? `<div class="time">${msg}</div>` : ""}
-      ${data.attendance?.time ? `<div class="time">Attendance: ${new Date(data.attendance.time).toLocaleTimeString()}</div>` : ""}
     `;
     resultBox.classList.remove("hidden");
   }
 
-  function handleScan(id) {
-    const userRef = db.ref("users/" + id);
-    userRef.get().then(snap => {
-      if (!snap.exists()) {
+  function onScanSuccess(decodedText) {
+    db.ref("users/" + decodedText).get().then(snap => {
+      if (snap.exists()) {
+        showResult(snap.val());
+      } else {
         resultBox.innerHTML = `<div class="text-red-600 font-bold text-lg">❌ Invalid QR Code</div>`;
         resultBox.classList.remove("hidden");
-        return;
-      }
-      const data = snap.val();
-      const now = Date.now();
-
-      if (!data.attendance || !data.attendance.marked) {
-        // First time → mark attendance
-        userRef.update({ attendance: { marked: true, time: now } });
-        data.attendance = { marked: true, time: now };
-        showResult(data, "✅ Attendance Marked");
-      } else {
-        // Already marked → only show details
-        showResult(data, "ℹ️ Details Only");
       }
     });
-  }
-
-  function onScanSuccess(decodedText) {
-    handleScan(decodedText);
   }
 
   const html5QrCode = new Html5Qrcode("camera");
@@ -135,10 +117,7 @@
     { facingMode: "environment" },
     { fps: 10, qrbox: { width: 250, height: 250 } },
     onScanSuccess
-  ).catch(err => {
-    document.getElementById("camera").innerHTML =
-      `<p class="text-red-600 text-center">⚠️ Camera access failed: ${err}</p>`;
-  });
+  );
 </script>
 </body>
 </html>
