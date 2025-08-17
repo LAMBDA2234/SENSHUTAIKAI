@@ -1,39 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Checkpoint Scanner</title>
+  <meta charset="UTF-8" />
+  <title>Championship Checkpoint Scanner</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    #camera {
+      width: 320px;
+      margin: auto;
+    }
+    .result-card {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 320px;
+      margin-left: auto;
+      margin-right: auto;
+      background: #f3f4f6;
+    }
+    .result-card img {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 0.5rem;
+      border: 3px solid #2563eb;
+    }
+    .name {
+      font-size: 1rem;
+      font-weight: bold;
+      word-break: break-word;    /* long names wrap */
+      white-space: normal;       /* allow multiple lines */
+    }
+    .role {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      background: #2563eb;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-6">
+  <h1 class="text-xl font-bold mb-4">✅ Championship Checkpoint Scanner</h1>
 
-  <h1 class="text-3xl font-bold mb-4">✅ Championship Checkpoint Scanner</h1>
+  <!-- Camera -->
+  <div id="camera"></div>
 
-  <!-- QR Scanner Box -->
-  <div id="reader" class="w-80 h-80 border-4 border-indigo-500 rounded-xl shadow-lg"></div>
-
-  <!-- Result Box -->
-  <div id="resultBox" class="hidden mt-6 w-full max-w-md p-6 rounded-2xl shadow-xl text-center">
-    <img id="resPhoto" class="w-24 h-24 rounded-full mx-auto border-4 mb-3 hidden"/>
-    <div id="resName" class="text-2xl font-bold"></div>
-    <div id="resRole" class="text-lg font-semibold"></div>
-    <div id="resDojo" class="text-sm text-gray-700"></div>
-    <div id="resId" class="text-xs mt-2 text-gray-500"></div>
-  </div>
-
-  <!-- Sounds -->
-  <audio id="beepOk">
-    <source src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" type="audio/ogg">
-  </audio>
-  <audio id="beepFail">
-    <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" type="audio/ogg">
-  </audio>
+  <!-- Result Card -->
+  <div id="result" class="result-card hidden"></div>
 
 <script>
-  // Firebase Config
+  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyDaHqgItxdKb-wQhjRX4mD-4yFyc2sfroE",
     authDomain: "championship-app-4cbd4.firebaseapp.com",
@@ -46,62 +70,35 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  const resBox = document.getElementById("resultBox");
-  const resPhoto = document.getElementById("resPhoto");
-  const resName = document.getElementById("resName");
-  const resRole = document.getElementById("resRole");
-  const resDojo = document.getElementById("resDojo");
-  const resId = document.getElementById("resId");
-  const beepOk = document.getElementById("beepOk");
-  const beepFail = document.getElementById("beepFail");
+  // Start scanner
+  const html5QrCode = new Html5Qrcode("camera");
+  html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 200 },
+    qrCodeMessage => { verifyUser(qrCodeMessage); }
+  );
 
-  function showResult(user, success) {
-    resBox.classList.remove("hidden");
-    if (success) {
-      resBox.className = "mt-6 w-full max-w-md p-6 rounded-2xl shadow-xl text-center bg-green-500 text-white";
-      resName.textContent = user.name;
-      resRole.textContent = user.role;
-      resDojo.textContent = user.dojo || "No Dojo";
-      resId.textContent = "ID: " + user.id;
-      if (user.photo) {
-        resPhoto.src = user.photo;
-        resPhoto.classList.remove("hidden");
-      } else {
-        resPhoto.classList.add("hidden");
-      }
-      beepOk.play();
+  async function verifyUser(id) {
+    const snap = await db.ref("users/"+id).get();
+    const res = document.getElementById("result");
+    res.innerHTML = "";
+    if(snap.exists()){
+      const u = snap.val();
+      res.classList.remove("hidden");
+      res.style.background = "#d1fae5"; // green if valid
+      res.innerHTML = `
+        <img src="${u.photo || ''}" alt="Photo"/>
+        <div class="name">${u.name}</div>
+        <div class="role">${u.role}</div>
+        <div class="text-sm text-gray-700">${u.dojo || ""}</div>
+        <div class="text-xs text-gray-500 mt-1">ID: ${u.id}</div>
+      `;
     } else {
-      resBox.className = "mt-6 w-full max-w-md p-6 rounded-2xl shadow-xl text-center bg-red-600 text-white";
-      resName.textContent = "❌ Invalid ID";
-      resRole.textContent = "";
-      resDojo.textContent = "";
-      resId.textContent = "Not found in system";
-      resPhoto.classList.add("hidden");
-      beepFail.play();
+      res.classList.remove("hidden");
+      res.style.background = "#fee2e2"; // red if invalid
+      res.innerHTML = `<div class="name text-red-700">❌ Invalid ID</div>`;
     }
   }
-
-  function onScanSuccess(decodedText) {
-    console.log("QR detected:", decodedText);
-    db.ref("users/" + decodedText).get().then(snapshot => {
-      if (snapshot.exists()) {
-        showResult(snapshot.val(), true);
-      } else {
-        showResult(null, false);
-      }
-    });
-  }
-
-  const html5QrCode = new Html5Qrcode("reader");
-  Html5Qrcode.getCameras().then(cameras => {
-    if (cameras && cameras.length) {
-      html5QrCode.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 250 },
-        onScanSuccess
-      );
-    }
-  });
 </script>
 </body>
 </html>
