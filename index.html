@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Championship Checkpoint Scanner</title>
+  <meta charset="UTF-8">
+  <title>Championship • Checkpoint Scanner</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -18,9 +18,8 @@
       border-radius: 12px;
       text-align: center;
       max-width: 320px;
-      margin-left: auto;
-      margin-right: auto;
       background: #f3f4f6;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
     .result-card img {
       width: 80px; height: 80px;
@@ -32,29 +31,30 @@
     .name {
       font-size: 1rem;
       font-weight: bold;
-      word-break: break-word;    /* long names wrap */
-      white-space: normal;       /* allow multiple lines */
+      word-break: break-word;
+      white-space: normal;
     }
     .role {
-      display: inline-block;
-      margin-top: 4px;
+      font-size: 0.9rem;
+      font-weight: bold;
       padding: 2px 8px;
       border-radius: 6px;
-      font-size: 12px;
-      font-weight: 700;
-      color: #fff;
-      background: #2563eb;
+      display: inline-block;
+      margin: 4px 0;
     }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col items-center p-6">
+
   <h1 class="text-xl font-bold mb-4">✅ Championship Checkpoint Scanner</h1>
 
-  <!-- Camera -->
-  <div id="camera"></div>
+  <div class="flex flex-col items-center space-y-4">
+    <!-- Camera -->
+    <div id="camera"></div>
 
-  <!-- Result Card -->
-  <div id="result" class="result-card hidden"></div>
+    <!-- Result Card -->
+    <div id="result" class="result-card hidden"></div>
+  </div>
 
 <script>
   // Firebase config
@@ -70,35 +70,55 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // Start scanner
+  const resultBox = document.getElementById("result");
+
+  function showResult(data) {
+    if (!data) return;
+
+    // role badge color map
+    let roleColor = {
+      "PLAYER": "bg-blue-600 text-white",
+      "JUDGE": "bg-red-600 text-white",
+      "COACH": "bg-green-600 text-white",
+      "STAFF": "bg-purple-600 text-white",
+      "VOLUNTEER": "bg-yellow-600 text-white"
+    };
+
+    resultBox.innerHTML = `
+      <img src="${data.photo || ''}" alt="Photo"/>
+      <div class="name">${data.name || 'Unknown'}</div>
+      <div class="role ${roleColor[data.role?.toUpperCase()] || 'bg-gray-400 text-white'}">
+        ${data.role || ''}
+      </div>
+      <div class="dojo">${data.dojo || ''}</div>
+      <div class="id">ID: ${data.id || ''}</div>
+    `;
+    resultBox.classList.remove("hidden");
+
+    // optional: auto-hide after 5 sec
+    // setTimeout(() => { resultBox.classList.add("hidden"); }, 5000);
+
+    // optional: play beep
+    // new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg").play();
+  }
+
+  function onScanSuccess(decodedText) {
+    db.ref("users/" + decodedText).get().then(snap => {
+      if (snap.exists()) {
+        showResult(snap.val());
+      } else {
+        resultBox.innerHTML = `<div class="text-red-600 font-bold">❌ Invalid QR Code</div>`;
+        resultBox.classList.remove("hidden");
+      }
+    });
+  }
+
   const html5QrCode = new Html5Qrcode("camera");
   html5QrCode.start(
     { facingMode: "environment" },
-    { fps: 10, qrbox: 200 },
-    qrCodeMessage => { verifyUser(qrCodeMessage); }
+    { fps: 10, qrbox: { width: 200, height: 200 } },
+    onScanSuccess
   );
-
-  async function verifyUser(id) {
-    const snap = await db.ref("users/"+id).get();
-    const res = document.getElementById("result");
-    res.innerHTML = "";
-    if(snap.exists()){
-      const u = snap.val();
-      res.classList.remove("hidden");
-      res.style.background = "#d1fae5"; // green if valid
-      res.innerHTML = `
-        <img src="${u.photo || ''}" alt="Photo"/>
-        <div class="name">${u.name}</div>
-        <div class="role">${u.role}</div>
-        <div class="text-sm text-gray-700">${u.dojo || ""}</div>
-        <div class="text-xs text-gray-500 mt-1">ID: ${u.id}</div>
-      `;
-    } else {
-      res.classList.remove("hidden");
-      res.style.background = "#fee2e2"; // red if invalid
-      res.innerHTML = `<div class="name text-red-700">❌ Invalid ID</div>`;
-    }
-  }
 </script>
 </body>
 </html>
